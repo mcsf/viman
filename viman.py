@@ -110,15 +110,22 @@ class ScrollList:
     def selection(self):
         return self.data[self.select]
 
-    def react(self, key): # FIXME use a dict, man!
-        if   key == ord('j'): self.down()
-        elif key == ord('k'): self.up()
-        elif key == ord('n'): self.pd()
-        elif key == ord('p'): self.pu()
-        elif key == ord('e'): self.sd()
-        elif key == ord('y'): self.su()
-        else: return False
-        return True
+    def react(self, key):
+        opt = {
+            'j': self.down,
+            'k': self.up,
+            'n': self.pd,
+            'p': self.pu,
+            'e': self.sd,
+            'y': self.su
+        }
+        try:
+            c = chr(key)
+            if c in opt:
+                opt[c]()
+                return True
+        except ValueError: pass
+        return False
 
     def top(self):
         self.select = 0
@@ -190,10 +197,17 @@ class FileBrowser(ScrollList):
 
     def react(self, key):
         if not ScrollList.react(self, key):
-            if   key == ord('l'): self.right()
-            elif key == ord('h'): self.left()
-            else: return False
-        return True
+            opt = {
+                'l': self.right,
+                'h': self.left
+            }
+            try:
+                c = chr(key)
+                if c in opt:
+                    opt[c]()
+                    return True
+            except ValueError: pass
+            return False
 
     def hist_push(self):
         self.history.insert(0, (self.select, self.scroll))
