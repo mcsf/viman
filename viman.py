@@ -6,11 +6,12 @@
 # - Editing of entries
 # - Mark entries as read/unread
 
+import cPickle
 import curses
 import fnmatch
 import os
 import os.path
-import cPickle
+import sys
 
 
 ## SETTINGS ############################################################
@@ -461,10 +462,19 @@ Navigating:
 
 if __name__ == '__main__':
     lockfile = os.path.expanduser('~/.viman.lockfile')
+    delete = True
     if os.path.isfile(lockfile):
         print 'Lockfile found! Is another instance already running?'
-        print '\nIf you know what you\'re doing, you can manually',
-        print 'remove file \'%s\'.' % lockfile
-    else:
-        with open(lockfile, 'w'): main()
-        os.remove(lockfile)
+        print 'Shall I abort (A), delete (D) the lockfile or just',
+        print 'ignore (I) it?'
+
+        while True:
+            ans = raw_input('(A/D/I)? ').lower()
+            if   ans == 'a': sys.exit(1)
+            elif ans == 'd': break
+            elif ans == 'i':
+                delete = False
+                break
+
+    with open(lockfile, 'a'): main()
+    if delete: os.remove(lockfile)
