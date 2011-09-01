@@ -5,13 +5,12 @@
 # - Deletion of associated files
 # - Editing of entries
 # - Mark entries as read/unread
-# - Mutex file
 
 import curses
 import fnmatch
 import os
 import os.path
-import pickle
+import cPickle
 
 
 ## SETTINGS ############################################################
@@ -70,12 +69,12 @@ class Data:
             self.size = 0
         else:
             with open(self.path, 'rb') as f:
-                self.data = pickle.load(f)
+                self.data = cPickle.load(f)
                 self.size = len(self.data)
 
     def commit(self):
         with open(self.path, 'wb') as f:
-            pickle.dump(self.data, f)
+            cPickle.dump(self.data, f)
 
 
 class ScrollList:
@@ -363,7 +362,7 @@ def main():
     ## MODES ###########################################################
     modes = {
         'default'   : 'main',
-        'main'      : 'space:Play a:AddNew d:Delete z:Sorting '
+        'main'      : 'space:Play a:AddNew d:Delete z:Sort '
                     + '?:Help q:Quit',
         'browser'   : 'hjkl:Navigate space:Select ?:Help q:Quit',
         'prompt'    : 'Enter to submit',
@@ -460,4 +459,12 @@ Navigating:
     curses.endwin()
     ####################################################################
 
-if __name__ == '__main__': main()
+if __name__ == '__main__':
+    lockfile = os.path.expanduser('~/.viman.lockfile')
+    if os.path.isfile(lockfile):
+        print 'Lockfile found! Is another instance already running?'
+        print '\nIf you know what you\'re doing, you can manually',
+        print 'remove file \'%s\'.' % lockfile
+    else:
+        with open(lockfile, 'w'): main()
+        os.remove(lockfile)
