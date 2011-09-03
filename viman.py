@@ -33,6 +33,7 @@ class Data:
             self.size = len(data)
         if keyfn: self.keyfn = keyfn
         else:     self.keyfn = lambda d, i: d[i]
+        self.reversed = False
         self.sort_by_field(field)
 
     def __getitem__(self, y):
@@ -74,7 +75,12 @@ class Data:
     def sort_by_field(self, field=None):
         if field is not None: self.field = field
         if self.field >= 0 and self.field < self.size:
-            self.data.sort(key=lambda i:i[self.field])
+            self.data.sort(key=lambda i:i[self.field],
+                    reverse=self.reversed)
+
+    def reverse(self):
+        self.reversed = not self.reversed
+        self.sort_by_field()
 
     def checkout(self):
         if not os.path.isfile(self.path):
@@ -383,7 +389,8 @@ def main():
                     + '!:Mark ?:Help q:Quit',
         'browser'   : 'hjkl:Navigate space:Select ?:Help q:Quit',
         'prompt'    : 'Enter to submit',
-        'sort'      : 'Sort by? - y:Year t:Title',
+        'sort'      : 'Sort by? - y:Year t:Title !:Mark r:Reverse '
+                    + 'q:Quit',
         'delete'    : 'Really delete? - d:DeleteEntry '
                     + 'D:DeleteWithFiles q:Abort',
         'help'      : 'Press any key to return'
@@ -458,18 +465,25 @@ Navigating:
 
             # List sorting
             elif c == ord('z'):
-                opt = { 'y': 0, 't': 1 }
+                keep_sorting = False
+                opt = { 'y': 0, 't': 1, '!': 3 }
                 with mode('sort'):
-                    ans = chr(body.pad.getch())
-                    if ans in opt.keys():
-                        body.data.sort_by_field(opt[ans])
+                    ans = 0
+                    while ans != 'q':
+                        ans = chr(body.pad.getch())
+                        if ans == 'r':
+                            body.data.reverse()
+                        elif ans in opt.keys():
+                            body.data.sort_by_field(opt[ans])
+                        if not keep_sorting: break
+                        body.draw()
 
             # Help
             elif c == ord('?'):
                 with mode('help'):
                     sshow(browser.pad, helpstr)
 
-            # Toggle 'new' flag
+            # Toggle mark
             elif c == ord('!'):
                 i = body.select
                 body.data.set(i, 3, not body.data.get(i, 3))
