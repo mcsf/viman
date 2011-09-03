@@ -4,7 +4,6 @@
 # TODO:
 # - Deletion of associated files
 # - Editing of entries
-# - Mark entries as read/unread
 
 import cPickle
 import curses
@@ -37,9 +36,9 @@ class Data:
         self.sort_by_field(field)
 
     def __getitem__(self, y):
-        if y >= 0 and y < self.size:
+        try:
             return self.data[y]
-        else:
+        except IndexError:
             return None
 
     def append(self, y):
@@ -47,7 +46,20 @@ class Data:
         self.size += 1
         self.sort_by_field()
         self.commit()
+
+    def get(self, i, j):
+        try:
+            return self.data[i][j]
+        except IndexError:
+            return None
     
+    def set(self, i, j, value):
+        entry = self.data[i]
+        if entry:
+            entry.extend([None for k in range(j+1 - len(entry))])
+            entry[j] = value
+            self.commit()
+
     def delete(self, i):
         self.data.pop(i)
         self.size -= 1
@@ -316,13 +328,16 @@ def get_param(w, prompt_string):
 def main():
 
     ## CUSTOMISATION ###################################################
-    def my_data_insert(w, data, item):
+    def my_data_insert(w, data, *items):
         data.append([
                 get_param(w, "Year?"),
-                get_param(w, "Title?"),
-                item])
+                get_param(w, "Title?")]
+                + list(items))
 
-    my_show_fn = lambda d, i: '(%s) %s' % (d[i][0], d[i][1])
+    def my_show_fn(d, i):
+        isread = d[i][3] if len(d[i]) > 3 else False
+        marker = ' ' if isread else '!'
+        return '%s (%s) %s' % (marker, d[i][0], d[i][1])
     ####################################################################
 
 
@@ -356,7 +371,8 @@ def main():
                 os.path.join(
                     os.path.expanduser(BROWSEDIR),
                     browser.current,
-                    browser.selection()))
+                    browser.selection()),
+                False)
     ####################################################################
 
 
@@ -364,7 +380,7 @@ def main():
     modes = {
         'default'   : 'main',
         'main'      : 'space:Play a:AddNew d:Delete z:Sort '
-                    + '?:Help q:Quit',
+                    + '!:Mark ?:Help q:Quit',
         'browser'   : 'hjkl:Navigate space:Select ?:Help q:Quit',
         'prompt'    : 'Enter to submit',
         'sort'      : 'Sort by? - y:Year t:Title',
@@ -452,6 +468,11 @@ Navigating:
             elif c == ord('?'):
                 with mode('help'):
                     sshow(browser.pad, helpstr)
+
+            # Toggle 'new' flag
+            elif c == ord('!'):
+                i = body.select
+                body.data.set(i, 3, not body.data.get(i, 3))
 
     ####################################################################
 
