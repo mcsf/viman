@@ -4,6 +4,7 @@
 # TODO:
 # - Deletion of associated files
 # - Editing of entries
+# - Disown spawned processes
 
 import cPickle
 import curses
@@ -130,12 +131,14 @@ class ScrollList:
 
     def react(self, key):
         opt = {
+            'g': self.top,
             'j': self.down,
             'k': self.up,
-            'n': self.pd,
-            'p': self.pu,
-            'e': self.sd,
-            'y': self.su
+            'G': self.bottom,
+            '\x02': self.pu, # ^B
+            '\x05': self.sd, # ^E
+            '\x06': self.pd, # ^F
+            '\x19': self.su, # ^Y
         }
         try:
             c = chr(key)
@@ -148,6 +151,11 @@ class ScrollList:
     def top(self):
         self.select = 0
         self.scroll = 0
+
+    def bottom(self):
+        self.select = self.data.size - 1
+        while self.scroll + self.height <= self.data.size - 1:
+            self.scroll += self.height
 
     def down(self):
         if self.select < self.data.size - 1:
@@ -341,7 +349,7 @@ def main():
                 + list(items))
 
     def my_show_fn(d, i):
-        isread = d[i][3] if len(d[i]) > 3 else False
+        isread = len(d[i]) > 3 and d[i][3]
         marker = ' ' if isread else '!'
         return '%s (%s) %s' % (marker, d[i][0], d[i][1])
     ####################################################################
@@ -403,10 +411,12 @@ def main():
 Navigating:
       k       Select Up
       j       Select Down
-      e       Scroll Up
-      y       Scroll Down
-      p       Page Up
-      n       Page Down
+      ^B      Page Up
+      ^F      Page Down
+      ^Y      Scroll Up
+      ^E      Scroll Down
+      g       Jump to Top
+      G       Jump to Bottom
  
   General:
       l       Go inside
@@ -453,6 +463,7 @@ Navigating:
 
             # Entry selection
             elif c in [ord(' '), ord('l')]:
+                body.data.set(body.select, 3, True)
                 os.system(HANDLESTR % body.selection()[2])
 
             # Entry deletion
