@@ -130,22 +130,22 @@ class ScrollList:
         return self.data[self.select]
 
     def react(self, key):
-        opt = {
-            'g': self.top,
-            'j': self.down,
-            'k': self.up,
-            'G': self.bottom,
-            '\x02': self.pu, # ^B
-            '\x05': self.sd, # ^E
-            '\x06': self.pd, # ^F
-            '\x19': self.su, # ^Y
-        }
-        try:
-            c = chr(key)
+        try: c = chr(key)
+        except ValueError: pass
+        else:
+            opt = {
+                'g': self.top,
+                'j': self.down,
+                'k': self.up,
+                'G': self.bottom,
+                '\x02': self.pu, # ^B
+                '\x05': self.sd, # ^E
+                '\x06': self.pd, # ^F
+                '\x19': self.su, # ^Y
+            }
             if c in opt:
                 opt[c]()
                 return True
-        except ValueError: pass
         return False
 
     def top(self):
@@ -223,16 +223,16 @@ class FileBrowser(ScrollList):
 
     def react(self, key):
         if not ScrollList.react(self, key):
-            opt = {
-                'l': self.right,
-                'h': self.left
-            }
-            try:
-                c = chr(key)
+            try: c = chr(key)
+            except ValueError: pass
+            else:
+                opt = {
+                    'l': self.right,
+                    'h': self.left
+                }
                 if c in opt:
                     opt[c]()
                     return True
-            except ValueError: pass
             return False
 
     def hist_push(self):
@@ -395,7 +395,7 @@ def main():
         'default'   : 'main',
         'main'      : 'space:Play a:AddNew d:Delete z:Sort '
                     + '!:Mark ?:Help q:Quit',
-        'browser'   : 'hjkl:Navigate space:Select ?:Help q:Quit',
+        'browser'   : 'hjkl:Navigate space:Select q:Quit',
         'prompt'    : 'Enter to submit',
         'sort'      : 'Sort by? - y:Year t:Title !:Mark r:Reverse '
                     + 'q:Quit',
@@ -403,6 +403,54 @@ def main():
                     + 'D:DeleteWithFiles q:Abort',
         'help'      : 'Press any key to return'
     }
+    ####################################################################
+
+
+    ## ACTIONS #########################################################
+    def file_browser():
+        with mode('browser'):
+            c = 0
+            while c != ord('q'):
+                browser.draw()
+                c = browser.pad.getch()
+                if not browser.react(c):
+                    if c == ord(' '):
+                        browser_select()
+                        break
+
+    def entry_select():
+        body.data.set(body.select, 3, True)
+        os.system(HANDLESTR % body.selection()[2])
+
+    def entry_delete():
+        with mode('delete'):
+            ans = chr(body.pad.getch())
+            if ans == 'd':
+                body.data.delete(body.select)
+            elif ans == 'D': pass
+
+    def list_sort():
+        keep_sorting = False
+        opt = { 'y': 0, 't': 1, '!': 3 }
+        with mode('sort'):
+            ans = 0
+            while ans != 'q':
+                ans = chr(body.pad.getch())
+                if ans == 'r':
+                    body.data.reverse()
+                elif ans in opt.keys():
+                    body.data.sort_by_field(opt[ans])
+                if not keep_sorting: break
+                body.draw()
+
+    def help_show():
+        with mode('help'):
+            sshow(browser.pad, helpstr)
+
+    def mark_toggle():
+        i = body.select
+        body.data.set(i, 3, not body.data.get(i, 3))
+
     ####################################################################
 
 
@@ -439,65 +487,25 @@ Navigating:
 
 
     ## MAIN LOOP #######################################################
-    c = 0
-    while c != ord('q'):
+    key = 0
+    while key != ord('q'):
         draw()
-        c = body.pad.getch()
+        key = body.pad.getch()
 
-        if not body.react(c):
-
-            # Resizing
-            if c == curses.KEY_RESIZE: resize()
-
-            # File browser
-            elif c == ord('a'):
-                with mode('browser'):
-                    while c != ord('q'):
-                        browser.draw()
-                        c = browser.pad.getch()
-                        if not browser.react(c):
-                            if c == ord(' '):
-                                browser_select()
-                                break
-                    c = 0
-
-            # Entry selection
-            elif c in [ord(' '), ord('l')]:
-                body.data.set(body.select, 3, True)
-                os.system(HANDLESTR % body.selection()[2])
-
-            # Entry deletion
-            elif c == ord('d'):
-                with mode('delete'):
-                    ans = chr(body.pad.getch())
-                    if ans == 'd':
-                        body.data.delete(body.select)
-                    elif ans == 'D': pass
-
-            # List sorting
-            elif c == ord('z'):
-                keep_sorting = False
-                opt = { 'y': 0, 't': 1, '!': 3 }
-                with mode('sort'):
-                    ans = 0
-                    while ans != 'q':
-                        ans = chr(body.pad.getch())
-                        if ans == 'r':
-                            body.data.reverse()
-                        elif ans in opt.keys():
-                            body.data.sort_by_field(opt[ans])
-                        if not keep_sorting: break
-                        body.draw()
-
-            # Help
-            elif c == ord('?'):
-                with mode('help'):
-                    sshow(browser.pad, helpstr)
-
-            # Toggle mark
-            elif c == ord('!'):
-                i = body.select
-                body.data.set(i, 3, not body.data.get(i, 3))
+        if not body.react(key):
+            try: c = chr(key)
+            except ValueError: pass
+            else:
+                opt = {
+                    ' ': entry_select,
+                    '!': mark_toggle,
+                    '?': help_show,
+                    'a': file_browser,
+                    'd': entry_delete,
+                    'l': entry_select,
+                    'z': list_sort,
+                }
+                if c in opt: opt[c]()
 
     ####################################################################
 
