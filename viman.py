@@ -4,19 +4,20 @@
 # TODO:
 # - Deletion of associated files
 # - Editing of entries
-# - Disown spawned processes
 
 import cPickle
 import curses
 import fnmatch
 import os
 import os.path
+import shlex
+import subprocess
 import sys
 
 
 ## SETTINGS ############################################################
 BROWSEDIR = '~/www'
-HANDLESTR = 'vlc "%s" >/dev/null 2>&1 &'
+HANDLESTR = 'vlc "%s"'
 DB_PATH = 'mydb.pickle'
 EXTS = ['avi', 'flv', 'iso', 'mkv', 'mov', 'mp4', 'mpeg', 'mpg', 'wmv']
 #SHOW_INFO = False
@@ -420,7 +421,9 @@ def main():
 
     def entry_select():
         body.data.set(body.select, 3, True)
-        os.system(HANDLESTR % body.selection()[2])
+        subprocess.Popen(shlex.split(
+            HANDLESTR % body.selection()[2]),
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     def entry_delete():
         with mode('delete'):
