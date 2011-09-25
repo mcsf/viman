@@ -18,6 +18,7 @@ import sys
 ## SETTINGS ############################################################
 BROWSEDIR = '~/www'
 HANDLESTR = 'vlc "%s"'
+DIROPENER = 'thunar "%s"'
 DB_PATH = 'mydb.pickle'
 EXTS = ['avi', 'flv', 'iso', 'mkv', 'mov', 'mp4', 'mpeg', 'mpg', 'wmv']
 #SHOW_INFO = False
@@ -420,10 +421,14 @@ def main():
                         break
 
     def entry_select():
-        body.data.set(body.select, 3, True)
-        subprocess.Popen(shlex.split(
-            HANDLESTR % body.selection()[2]),
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        path = body.selection()[2]
+        if os.path.isdir(path):
+            subprocess.Popen(shlex.split(DIROPENER % path),
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        else:
+            body.data.set(body.select, 3, True)
+            subprocess.Popen(shlex.split(HANDLESTR % path),
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     def entry_delete():
         with mode('delete'):
