@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 ## 2011-08-30
 
+# FIXME:
+# - Resizing
 # TODO:
 # - Deletion of associated files
 # - Editing of entries
@@ -20,7 +22,7 @@ BROWSEDIR = '~/www'
 HANDLESTR = 'vlc "%s"'
 DIROPENER = 'thunar "%s"'
 DB_PATH = 'mydb.pickle'
-EXTS = ['avi', 'flv', 'iso', 'mkv', 'mov', 'mp4', 'mpeg', 'mpg', 'wmv']
+EXTS = ['avi', 'flv', 'iso', 'mkv', 'm4v', 'mov', 'mp4', 'mpeg', 'mpg', 'wmv']
 #SHOW_INFO = False
 ########################################################################
 
@@ -37,6 +39,7 @@ class Data:
         if keyfn: self.keyfn = keyfn
         else:     self.keyfn = lambda d, i: d[i]
         self.reversed = False
+        self.sort_by_field(0)
         self.sort_by_field(field)
 
     def __getitem__(self, y):
