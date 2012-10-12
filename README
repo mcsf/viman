@@ -1,0 +1,5 @@
+Viman is a very simple ncurses organizer for your videos with Vim-like
+keybindings. You can add new videos by browsing your Home directory,
+list them by year or title or by whether they are marked as watched, and
+play them through your video player. This an old toy project; it has
+some bugs and could do a lot of other useful things.
